@@ -5,7 +5,7 @@ import * as Speech from 'expo-speech';
 import AIModelService from '../services/AIModelService';
 
 export default function AudioRecorder({ onTranscription }) {
-  const [recording, setRecording] = useState();
+  const [recording, setRecording] = useState(null);
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [transcribedText, setTranscribedText] = useState('');
@@ -14,11 +14,14 @@ export default function AudioRecorder({ onTranscription }) {
 
   useEffect(() => {
     checkPermissions();
-    return recording
-      ? () => {
-          recording.unloadAsync();
-        }
-      : undefined;
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (recording && typeof recording.unloadAsync === 'function') {
+        recording.unloadAsync().catch(console.error);
+      }
+    };
   }, [recording]);
 
   const checkPermissions = async () => {
@@ -110,10 +113,16 @@ export default function AudioRecorder({ onTranscription }) {
     try {
       setIsRecording(false);
       setIsProcessing(true);
-      setRecording(undefined);
       
+      if (!recording) {
+        setIsProcessing(false);
+        Alert.alert('오류', '녹음 객체를 찾을 수 없습니다.');
+        return;
+      }
+
       await recording.stopAndUnloadAsync();
       const uri = recording.getURI();
+      setRecording(undefined);
       
       // AI 서비스를 사용해서 음성을 텍스트로 변환
       const transcriptionResult = await AIModelService.transcribeAudio(uri);
@@ -204,7 +213,7 @@ export default function AudioRecorder({ onTranscription }) {
           isProcessing && styles.processing
         ]}
         onPress={isRecording ? stopRecording : startRecording}
-        disabled={isProcessing}
+        disabled={isProcessing || (permissionStatus !== 'granted' && !isRecording)}
       >
         {isProcessing ? (
           <View style={styles.processingContainer}>
