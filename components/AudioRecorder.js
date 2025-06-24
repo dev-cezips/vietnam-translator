@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, TextInput, Modal } from 'react-native';
 import { Audio } from 'expo-av';
 import * as Speech from 'expo-speech';
 import AIModelService from '../services/AIModelService';
@@ -11,6 +11,8 @@ export default function AudioRecorder({ onTranscription }) {
   const [transcribedText, setTranscribedText] = useState('');
   const [detectedLanguage, setDetectedLanguage] = useState('');
   const [permissionStatus, setPermissionStatus] = useState('checking');
+  const [showTestInput, setShowTestInput] = useState(false);
+  const [testText, setTestText] = useState('');
 
   useEffect(() => {
     checkPermissions();
@@ -185,6 +187,38 @@ export default function AudioRecorder({ onTranscription }) {
     }
   };
 
+  // 사용자 입력 텍스트로 테스트
+  const testWithCustomText = async () => {
+    if (!testText.trim()) {
+      Alert.alert('입력 오류', '테스트할 텍스트를 입력해주세요.');
+      return;
+    }
+
+    setIsProcessing(true);
+    
+    try {
+      await new Promise(resolve => setTimeout(resolve, 800)); // 처리 시간 시뮬레이션
+      
+      const detectedLang = AIModelService.detectLanguage(testText);
+      
+      setTranscribedText(testText);
+      setDetectedLanguage(AIModelService.getLanguageName(detectedLang));
+      setIsProcessing(false);
+      setShowTestInput(false);
+      setTestText('');
+      
+      onTranscription({
+        text: testText,
+        language: detectedLang,
+        confidence: 0.95
+      });
+    } catch (error) {
+      console.error('커스텀 텍스트 테스트 실패:', error);
+      setIsProcessing(false);
+      Alert.alert('오류', '테스트에 실패했습니다.');
+    }
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.statusContainer}>
@@ -227,17 +261,29 @@ export default function AudioRecorder({ onTranscription }) {
         )}
       </TouchableOpacity>
 
-      {/* 테스트 버튼 (마이크 권한이 없을 때) */}
+      {/* 테스트 버튼들 (마이크 권한이 없을 때) */}
       {permissionStatus !== 'granted' && (
-        <TouchableOpacity
-          style={styles.testButton}
-          onPress={testVoiceRecognition}
-          disabled={isProcessing}
-        >
-          <Text style={styles.buttonText}>
-            🧪 음성인식 테스트 (더미 데이터)
-          </Text>
-        </TouchableOpacity>
+        <View style={styles.testButtonsContainer}>
+          <TouchableOpacity
+            style={styles.testButton}
+            onPress={testVoiceRecognition}
+            disabled={isProcessing}
+          >
+            <Text style={styles.buttonText}>
+              🧪 랜덤 테스트
+            </Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={[styles.testButton, styles.customTestButton]}
+            onPress={() => setShowTestInput(true)}
+            disabled={isProcessing}
+          >
+            <Text style={styles.buttonText}>
+              ✏️ 직접 입력 테스트
+            </Text>
+          </TouchableOpacity>
+        </View>
       )}
       
       {transcribedText ? (
@@ -274,6 +320,52 @@ export default function AudioRecorder({ onTranscription }) {
           </View>
         </View>
       ) : null}
+
+      {/* 텍스트 입력 모달 */}
+      <Modal
+        visible={showTestInput}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowTestInput(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>음성 인식 테스트</Text>
+            <Text style={styles.modalSubtitle}>
+              음성으로 말할 텍스트를 직접 입력해보세요
+            </Text>
+            
+            <TextInput
+              style={styles.testInput}
+              placeholder="예: 사랑해, 안녕하세요, Hello..."
+              value={testText}
+              onChangeText={setTestText}
+              multiline={false}
+              autoFocus={true}
+            />
+            
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={() => {
+                  setShowTestInput(false);
+                  setTestText('');
+                }}
+              >
+                <Text style={styles.cancelButtonText}>취소</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={styles.confirmButton}
+                onPress={testWithCustomText}
+                disabled={!testText.trim()}
+              >
+                <Text style={styles.confirmButtonText}>테스트</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -398,12 +490,15 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 20,
   },
+  testButtonsContainer: {
+    marginTop: 15,
+    gap: 10,
+  },
   testButton: {
     backgroundColor: '#28A745',
     paddingHorizontal: 30,
     paddingVertical: 15,
     borderRadius: 25,
-    marginTop: 15,
     minWidth: 200,
     alignItems: 'center',
     shadowColor: '#000',
@@ -411,5 +506,77 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 3,
+  },
+  customTestButton: {
+    backgroundColor: '#17A2B8',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    borderRadius: 15,
+    padding: 25,
+    width: '85%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 10,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 10,
+    color: '#333',
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    textAlign: 'center',
+    color: '#666',
+    marginBottom: 20,
+    lineHeight: 20,
+  },
+  testInput: {
+    borderWidth: 1,
+    borderColor: '#DDD',
+    borderRadius: 10,
+    padding: 15,
+    fontSize: 16,
+    marginBottom: 20,
+    backgroundColor: '#F9F9F9',
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 15,
+  },
+  cancelButton: {
+    backgroundColor: '#6C757D',
+    paddingHorizontal: 25,
+    paddingVertical: 12,
+    borderRadius: 8,
+    flex: 1,
+    alignItems: 'center',
+  },
+  cancelButtonText: {
+    color: 'white',
+    fontWeight: '600',
+  },
+  confirmButton: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 25,
+    paddingVertical: 12,
+    borderRadius: 8,
+    flex: 1,
+    alignItems: 'center',
+  },
+  confirmButtonText: {
+    color: 'white',
+    fontWeight: '600',
   },
 });

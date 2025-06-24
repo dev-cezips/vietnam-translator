@@ -80,36 +80,67 @@ class AIModelService {
       // 현재는 시뮬레이션
       console.log('음성 인식 중...', audioPath);
       
-      // 더미 음성 인식 결과 (4개 언어)
-      const dummyResults = [
-        // 한국어
-        '안녕하세요, 오늘 날씨가 좋네요.',
+      // 더미 음성 인식 결과 (4개 언어) - 사용자가 자주 말할 법한 순서로 정렬
+      const commonPhrases = [
+        // 자주 사용하는 한국어 표현
+        '사랑해',
+        '사랑해요',
+        '안녕하세요',
+        '고마워요',
+        '네',
+        '아니요',
+        '죄송합니다',
+        '도와주세요',
+        '물',
+        '음식',
+        // 일상 대화
         '밥 먹었어요?',
         '어디 가세요?',
-        '고마워요.',
-        '사랑해요.',
+        '좋은 아침입니다',
+        '잘 자요',
+        '얼마예요?',
+        '화장실이 어디에 있어요?',
         // 베트남어
-        'Xin chào, hôm nay thời tiết đẹp.',
-        'Ăn cơm chưa?',
-        'Đi đâu vậy?',
-        'Cảm ơn.',
-        'Anh yêu em.',
-        // 대만어 (번체 중국어)
-        '你好，今天天氣真好。',
-        '吃飯了嗎？',
-        '你要去哪裡？',
-        '謝謝。',
-        '我愛你。',
+        'Anh yêu em',
+        'Xin chào',
+        'Cảm ơn',
+        'Vâng',
+        'Không',
+        'Xin lỗi',
+        'Nước',
+        'Đồ ăn',
+        // 대만어
+        '我愛你',
+        '你好',
+        '謝謝',
+        '是的',
+        '不是',
+        '對不起',
+        '水',
+        '食物',
         // 영어
-        'Hello, the weather is nice today.',
-        'Did you eat?',
-        'Where are you going?',
-        'Thank you.',
-        'I love you.'
+        'I love you',
+        'Hello',
+        'Thank you',
+        'Yes',
+        'No',
+        'I am sorry',
+        'Water',
+        'Food'
       ];
 
-      // 랜덤 결과 반환 (실제로는 whisper.cpp 결과)
-      const result = dummyResults[Math.floor(Math.random() * dummyResults.length)];
+      // 첫 번째 시도에서는 자주 사용하는 표현 중에서 선택 (가중치 적용)
+      let result;
+      const randomNum = Math.random();
+      
+      if (randomNum < 0.7) {
+        // 70% 확률로 자주 사용하는 한국어 표현
+        const koreanCommon = commonPhrases.slice(0, 16);
+        result = koreanCommon[Math.floor(Math.random() * koreanCommon.length)];
+      } else {
+        // 30% 확률로 전체 표현 중에서
+        result = commonPhrases[Math.floor(Math.random() * commonPhrases.length)];
+      }
       
       await new Promise(resolve => setTimeout(resolve, 1500)); // 처리 시간 시뮬레이션
       
