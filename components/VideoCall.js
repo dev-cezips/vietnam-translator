@@ -9,7 +9,19 @@ import {
   TextInput,
   Modal
 } from 'react-native';
-import { RTCView, RTCPeerConnection, RTCIceCandidate, RTCSessionDescription, mediaDevices } from 'react-native-webrtc';
+// WebRTC는 Expo Go에서 지원되지 않으므로 조건부 import
+let RTCView, RTCPeerConnection, RTCIceCandidate, RTCSessionDescription, mediaDevices;
+
+try {
+  const webRTC = require('react-native-webrtc');
+  RTCView = webRTC.RTCView;
+  RTCPeerConnection = webRTC.RTCPeerConnection;
+  RTCIceCandidate = webRTC.RTCIceCandidate;
+  RTCSessionDescription = webRTC.RTCSessionDescription;
+  mediaDevices = webRTC.mediaDevices;
+} catch (error) {
+  console.log('WebRTC not available in Expo Go');
+}
 import AIModelService from '../services/AIModelService';
 
 const { width, height } = Dimensions.get('window');
@@ -22,9 +34,15 @@ export default function VideoCall({ onTranscription }) {
   const [subtitles, setSubtitles] = useState('');
   const [roomId, setRoomId] = useState('');
   const [showRoomModal, setShowRoomModal] = useState(false);
+  const [webRTCAvailable, setWebRTCAvailable] = useState(false);
   
   const peerConnection = useRef(null);
   const localStreamRef = useRef(null);
+
+  useEffect(() => {
+    // WebRTC 사용 가능 여부 확인
+    setWebRTCAvailable(!!mediaDevices);
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -141,6 +159,34 @@ export default function VideoCall({ onTranscription }) {
     setShowRoomModal(false);
     startCall();
   };
+
+  // WebRTC가 없을 때 안내 화면
+  if (!webRTCAvailable) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.welcomeContainer}>
+          <Text style={styles.title}>🎥 동영상 통화</Text>
+          <Text style={styles.subtitle}>실시간 번역 기능이 포함된 동영상 통화</Text>
+          
+          <View style={styles.notAvailableContainer}>
+            <Text style={styles.notAvailableTitle}>📱 Expo Go 제한사항</Text>
+            <Text style={styles.notAvailableText}>
+              동영상 통화 기능은 Expo Go에서 지원되지 않습니다.
+            </Text>
+            <Text style={styles.notAvailableText}>
+              실제 앱 빌드 시에는 정상 작동합니다.
+            </Text>
+            
+            <View style={styles.alternativeContainer}>
+              <Text style={styles.alternativeTitle}>대신 사용 가능한 기능:</Text>
+              <Text style={styles.alternativeText}>📝 텍스트 번역</Text>
+              <Text style={styles.alternativeText}>🎤 음성 인식 번역</Text>
+            </View>
+          </View>
+        </View>
+      </View>
+    );
+  }
 
   if (!isCallActive) {
     return (
@@ -448,5 +494,48 @@ const styles = StyleSheet.create({
   joinButtonText: {
     color: 'white',
     fontWeight: '600',
+  },
+  notAvailableContainer: {
+    backgroundColor: '#FFF3CD',
+    padding: 20,
+    borderRadius: 10,
+    marginVertical: 20,
+    borderWidth: 1,
+    borderColor: '#FFEAA7',
+  },
+  notAvailableTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#856404',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  notAvailableText: {
+    fontSize: 14,
+    color: '#856404',
+    textAlign: 'center',
+    marginBottom: 8,
+    lineHeight: 20,
+  },
+  alternativeContainer: {
+    marginTop: 15,
+    padding: 15,
+    backgroundColor: '#D4EDDA',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#C3E6CB',
+  },
+  alternativeTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#155724',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  alternativeText: {
+    fontSize: 14,
+    color: '#155724',
+    textAlign: 'center',
+    marginBottom: 5,
   },
 });
