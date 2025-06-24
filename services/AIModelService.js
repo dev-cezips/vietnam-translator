@@ -139,11 +139,18 @@ class AIModelService {
           '어디 가세요?': 'Đi đâu vậy?',
           '고마워요': 'Cảm ơn',
           '사랑해요': 'Anh yêu em',
+          '사랑해': 'Anh yêu em',
+          '사랑': 'Tình yêu',
           '좋은 아침입니다': 'Chào buổi sáng',
           '잘 자요': 'Chúc ngủ ngon',
           '도와주세요': 'Xin hãy giúp tôi',
           '얼마예요?': 'Bao nhiêu tiền?',
-          '화장실이 어디에 있어요?': 'Toilet ở đâu?'
+          '화장실이 어디에 있어요?': 'Toilet ở đâu?',
+          '네': 'Vâng',
+          '아니요': 'Không',
+          '죄송합니다': 'Xin lỗi',
+          '물': 'Nước',
+          '음식': 'Đồ ăn'
         },
         // 베트남어 -> 한국어
         'vi-ko': {
@@ -153,11 +160,17 @@ class AIModelService {
           'Đi đâu vậy?': '어디 가세요?',
           'Cảm ơn': '고마워요',
           'Anh yêu em': '사랑해요',
+          'Tình yêu': '사랑',
           'Chào buổi sáng': '좋은 아침입니다',
           'Chúc ngủ ngon': '잘 자요',
           'Xin hãy giúp tôi': '도와주세요',
           'Bao nhiêu tiền?': '얼마예요?',
-          'Toilet ở đâu?': '화장실이 어디에 있어요?'
+          'Toilet ở đâu?': '화장실이 어디에 있어요?',
+          'Vâng': '네',
+          'Không': '아니요',
+          'Xin lỗi': '죄송합니다',
+          'Nước': '물',
+          'Đồ ăn': '음식'
         },
         // 한국어 -> 대만어
         'ko-zh-TW': {
@@ -167,11 +180,18 @@ class AIModelService {
           '어디 가세요?': '你要去哪裡？',
           '고마워요': '謝謝',
           '사랑해요': '我愛你',
+          '사랑해': '我愛你',
+          '사랑': '愛',
           '좋은 아침입니다': '早安',
           '잘 자요': '晚安',
           '도와주세요': '請幫助我',
           '얼마예요?': '多少錢？',
-          '화장실이 어디에 있어요?': '廁所在哪裡？'
+          '화장실이 어디에 있어요?': '廁所在哪裡？',
+          '네': '是的',
+          '아니요': '不是',
+          '죄송합니다': '對不起',
+          '물': '水',
+          '음식': '食物'
         },
         // 대만어 -> 한국어
         'zh-TW-ko': {
@@ -195,11 +215,18 @@ class AIModelService {
           '어디 가세요?': 'Where are you going?',
           '고마워요': 'Thank you',
           '사랑해요': 'I love you',
+          '사랑해': 'I love you',
+          '사랑': 'Love',
           '좋은 아침입니다': 'Good morning',
           '잘 자요': 'Good night',
           '도와주세요': 'Please help me',
           '얼마예요?': 'How much is it?',
-          '화장실이 어디에 있어요?': 'Where is the bathroom?'
+          '화장실이 어디에 있어요?': 'Where is the bathroom?',
+          '네': 'Yes',
+          '아니요': 'No',
+          '죄송합니다': 'I am sorry',
+          '물': 'Water',
+          '음식': 'Food'
         },
         // 영어 -> 한국어
         'en-ko': {
@@ -266,11 +293,31 @@ class AIModelService {
       };
 
       const langPair = `${fromLang}-${toLang}`;
+      console.log(`번역 시도: "${text}" (${fromLang} -> ${toLang})`);
+      console.log(`언어 쌍: ${langPair}`);
+      
       let result = translations[langPair]?.[text];
+      console.log(`직접 매칭 결과: ${result}`);
+      
+      if (!result) {
+        // 부분 매칭 시도 (공백과 구두점 제거)
+        const cleanText = text.trim().toLowerCase();
+        const cleanTranslations = {};
+        
+        if (translations[langPair]) {
+          Object.keys(translations[langPair]).forEach(key => {
+            cleanTranslations[key.trim().toLowerCase()] = translations[langPair][key];
+          });
+        }
+        
+        result = cleanTranslations[cleanText];
+        console.log(`정리된 텍스트로 재시도: "${cleanText}" -> ${result}`);
+      }
       
       if (!result) {
         // 간단한 단어 번역 시도
         result = `[AI 번역] ${text}`;
+        console.log(`기본 번역으로 대체: ${result}`);
       }
 
       await new Promise(resolve => setTimeout(resolve, 1000)); // 번역 시간 시뮬레이션
