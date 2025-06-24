@@ -1,38 +1,33 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import * as Speech from 'expo-speech';
+import AIModelService from '../services/AIModelService';
 
 export default function Translator() {
   const [sourceText, setSourceText] = useState('');
   const [translatedText, setTranslatedText] = useState('');
   const [sourceLanguage, setSourceLanguage] = useState('ko'); // 한국어
   const [targetLanguage, setTargetLanguage] = useState('vi'); // 베트남어
+  const [isTranslating, setIsTranslating] = useState(false);
 
-  // 임시 번역 함수 (나중에 llama.cpp로 교체)
+  // AI 서비스를 사용한 번역 함수
   const translateText = async (text) => {
-    // 간단한 더미 번역
-    const translations = {
-      'ko-vi': {
-        '안녕하세요': 'Xin chào',
-        '고마워요': 'Cảm ơn',
-        '사랑해요': 'Anh yêu em',
-        '밥 먹었어요?': 'Ăn cơm chưa?',
-        '어디 가요?': 'Đi đâu đấy?',
-      },
-      'vi-ko': {
-        'Xin chào': '안녕하세요',
-        'Cảm ơn': '고마워요',
-        'Anh yêu em': '사랑해요',
-        'Ăn cơm chưa?': '밥 먹었어요?',
-        'Đi đâu đấy?': '어디 가요?',
-      }
-    };
+    if (!text.trim()) {
+      Alert.alert('입력 오류', '번역할 텍스트를 입력해주세요.');
+      return;
+    }
 
-    const langPair = `${sourceLanguage}-${targetLanguage}`;
-    const translation = translations[langPair]?.[text] || `[번역] ${text}`;
-    
-    setTranslatedText(translation);
-    return translation;
+    try {
+      setIsTranslating(true);
+      const result = await AIModelService.translateText(text, sourceLanguage, targetLanguage);
+      setTranslatedText(result.translatedText);
+      return result.translatedText;
+    } catch (error) {
+      console.error('번역 실패:', error);
+      Alert.alert('번역 오류', '번역에 실패했습니다. 다시 시도해주세요.');
+    } finally {
+      setIsTranslating(false);
+    }
   };
 
   const swapLanguages = () => {
@@ -93,9 +88,16 @@ export default function Translator() {
           <TouchableOpacity
             style={[styles.actionButton, styles.translateButton]}
             onPress={() => translateText(sourceText)}
-            disabled={!sourceText}
+            disabled={!sourceText || isTranslating}
           >
-            <Text style={styles.actionButtonText}>번역</Text>
+            {isTranslating ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator color="white" size="small" />
+                <Text style={[styles.actionButtonText, styles.loadingText]}>번역 중...</Text>
+              </View>
+            ) : (
+              <Text style={styles.actionButtonText}>🔄 번역</Text>
+            )}
           </TouchableOpacity>
         </View>
       </View>
@@ -199,6 +201,13 @@ const styles = StyleSheet.create({
   actionButtonText: {
     color: 'white',
     fontWeight: '600',
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginLeft: 8,
   },
   outputContainer: {
     margin: 15,
