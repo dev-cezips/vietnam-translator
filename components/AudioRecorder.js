@@ -60,7 +60,7 @@ export default function AudioRecorder({ onTranscription }) {
       const transcriptionResult = await AIModelService.transcribeAudio(uri);
       
       setTranscribedText(transcriptionResult.text);
-      setDetectedLanguage(transcriptionResult.language === 'ko' ? '한국어' : '베트남어');
+      setDetectedLanguage(AIModelService.getLanguageName(transcriptionResult.language));
       setIsProcessing(false);
       
       onTranscription({
@@ -76,8 +76,18 @@ export default function AudioRecorder({ onTranscription }) {
   }
 
   const speakText = (text) => {
+    // 감지된 언어에 따라 TTS 언어 설정
+    const languageCodeMap = {
+      '한국어': 'ko-KR',
+      'Tiếng Việt': 'vi-VN',
+      '繁體中文': 'zh-TW',
+      'English': 'en-US'
+    };
+    
+    const ttsLanguage = languageCodeMap[detectedLanguage] || 'ko-KR';
+    
     Speech.speak(text, {
-      language: 'ko-KR',
+      language: ttsLanguage,
       pitch: 1.0,
       rate: 0.8,
     });
@@ -128,11 +138,21 @@ export default function AudioRecorder({ onTranscription }) {
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.translateButton}
-              onPress={() => onTranscription({
-                text: transcribedText,
-                language: detectedLanguage === '한국어' ? 'ko' : 'vi',
-                shouldTranslate: true
-              })}
+              onPress={() => {
+                // 언어 코드 매핑
+                const languageCodeMap = {
+                  '한국어': 'ko',
+                  'Tiếng Việt': 'vi',
+                  '繁體中文': 'zh-TW',
+                  'English': 'en'
+                };
+                
+                onTranscription({
+                  text: transcribedText,
+                  language: languageCodeMap[detectedLanguage] || 'ko',
+                  shouldTranslate: true
+                });
+              }}
             >
               <Text style={styles.buttonText}>🔄 번역하기</Text>
             </TouchableOpacity>

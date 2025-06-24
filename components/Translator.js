@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import * as Speech from 'expo-speech';
 import AIModelService from '../services/AIModelService';
+import LanguageSelector from './LanguageSelector';
 
 export default function Translator() {
   const [sourceText, setSourceText] = useState('');
@@ -38,12 +39,29 @@ export default function Translator() {
   };
 
   const speakText = (text, language) => {
-    const voiceLanguage = language === 'ko' ? 'ko-KR' : 'vi-VN';
+    const voiceLanguageMap = {
+      'ko': 'ko-KR',
+      'vi': 'vi-VN',
+      'zh-TW': 'zh-TW',
+      'en': 'en-US'
+    };
+    
+    const voiceLanguage = voiceLanguageMap[language] || 'ko-KR';
     Speech.speak(text, {
       language: voiceLanguage,
       pitch: 1.0,
       rate: 0.8,
     });
+  };
+
+  const getPlaceholderText = (language) => {
+    const placeholders = {
+      'ko': '한국어를 입력하세요...',
+      'vi': 'Nhập tiếng Việt...',
+      'zh-TW': '請輸入繁體中文...',
+      'en': 'Enter English text...'
+    };
+    return placeholders[language] || '텍스트를 입력하세요...';
   };
 
   const clearAll = () => {
@@ -54,25 +72,30 @@ export default function Translator() {
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>베트남어 통역기</Text>
+        <Text style={styles.title}>🌍 다국어 통역기</Text>
+        <Text style={styles.subtitle}>한국어 • Tiếng Việt • 繁體中文 • English</Text>
       </View>
 
       <View style={styles.languageSelector}>
-        <Text style={styles.languageText}>
-          {sourceLanguage === 'ko' ? '한국어' : 'Tiếng Việt'}
-        </Text>
+        <LanguageSelector
+          selectedLanguage={sourceLanguage}
+          onLanguageChange={setSourceLanguage}
+          style={styles.languageSelectorItem}
+        />
         <TouchableOpacity style={styles.swapButton} onPress={swapLanguages}>
           <Text style={styles.swapButtonText}>⇄</Text>
         </TouchableOpacity>
-        <Text style={styles.languageText}>
-          {targetLanguage === 'ko' ? '한국어' : 'Tiếng Việt'}
-        </Text>
+        <LanguageSelector
+          selectedLanguage={targetLanguage}
+          onLanguageChange={setTargetLanguage}
+          style={styles.languageSelectorItem}
+        />
       </View>
 
       <View style={styles.inputContainer}>
         <TextInput
           style={styles.textInput}
-          placeholder={sourceLanguage === 'ko' ? '한국어를 입력하세요...' : 'Nhập tiếng Việt...'}
+          placeholder={getPlaceholderText(sourceLanguage)}
           value={sourceText}
           onChangeText={setSourceText}
           multiline
@@ -138,17 +161,23 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     color: 'white',
+    marginBottom: 5,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.8)',
+    textAlign: 'center',
   },
   languageSelector: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',
-    padding: 20,
+    padding: 15,
     backgroundColor: 'white',
   },
-  languageText: {
-    fontSize: 18,
-    fontWeight: '600',
+  languageSelectorItem: {
+    flex: 1,
+    marginHorizontal: 5,
   },
   swapButton: {
     backgroundColor: '#E9ECEF',
