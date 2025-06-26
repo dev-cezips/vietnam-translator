@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, View, SafeAreaView, TouchableOpacity, Text, ScrollView } from 'react-native';
+import { StyleSheet, View, SafeAreaView, TouchableOpacity, Text, ScrollView, Alert } from 'react-native';
 import Translator from './components/Translator';
 import AudioRecorder from './components/AudioRecorder';
 import VideoCall from './components/VideoCall';
+import Messenger from './components/Messenger';
+import AIModelService from './services/AIModelService';
 
 export default function App() {
   const [currentTab, setCurrentTab] = useState('translator');
@@ -15,6 +17,17 @@ export default function App() {
     if (transcriptionData.shouldTranslate) {
       setCurrentTab('translator');
       // 번역기 컴포넌트에 텍스트 전달하는 로직 추가 가능
+    }
+  };
+
+  const handleTranslateRequest = async (text, sourceLanguage = 'ko', targetLanguage = 'vi') => {
+    try {
+      const result = await AIModelService.translateText(text, sourceLanguage, targetLanguage);
+      return result.translatedText;
+    } catch (error) {
+      console.error('번역 실패:', error);
+      Alert.alert('번역 오류', '번역에 실패했습니다. 다시 시도해주세요.');
+      throw error;
     }
   };
 
@@ -52,12 +65,21 @@ export default function App() {
             📹 화상통화
           </Text>
         </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, currentTab === 'messenger' && styles.activeTab]}
+          onPress={() => setCurrentTab('messenger')}
+        >
+          <Text style={[styles.tabText, currentTab === 'messenger' && styles.activeTabText]}>
+            💬 메신저
+          </Text>
+        </TouchableOpacity>
       </ScrollView>
 
       <View style={styles.content}>
         {currentTab === 'translator' && <Translator />}
         {currentTab === 'recorder' && <AudioRecorder onTranscription={handleTranscription} />}
         {currentTab === 'videocall' && <VideoCall onTranscription={handleTranscription} />}
+        {currentTab === 'messenger' && <Messenger onTranslateRequest={handleTranslateRequest} />}
       </View>
     </SafeAreaView>
   );
