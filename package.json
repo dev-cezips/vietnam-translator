@@ -20,7 +20,10 @@
     "react-native": "0.79.4",
     "react-native-audio-recorder-player": "^3.6.13",
     "react-native-fs": "^2.20.0",
-    "react-native-webrtc": "^124.0.5"
+    "react-native-webrtc": "^124.0.5",
+    "react-dom": "19.0.0",
+    "react-native-web": "^0.20.0",
+    "@expo/metro-runtime": "~5.0.4"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0"
